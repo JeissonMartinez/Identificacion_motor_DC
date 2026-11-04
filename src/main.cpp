@@ -1,7 +1,7 @@
 /*
  * identificacion_motor.ino — Banco de identificación de los motores del balancín
  * Control Inteligente II (168418) · Universidad de Pamplona · Ing. Jeisson Martínez Flórez
- * Versión 1.0 · noviembre de 2026
+ * Versión 1.1 · noviembre de 2026
  *
  * Qué hace:
  *   - Lee los dos encoders en cuadratura (x4) con interrupciones.
@@ -12,9 +12,10 @@
  *
  * Funciona con el núcleo Arduino-ESP32 2.x y 3.x (Arduino IDE o PlatformIO), placa ESP32-S3.
  * Solo se modifica config.h. Escriba "h" en el monitor serie para ver los comandos.
+ * Cada comando termina con Enter: el monitor debe enviar fin de línea (\n o \r).
  *
  * SEGURIDAD: todos los ensayos con motores se hacen con el robot sobre un soporte y las
- * ruedas en el aire. Cualquier tecla detiene los motores.
+ * ruedas en el aire. Enter detiene los motores.
  */
 #include <Arduino.h>
 #include <esp_arduino_version.h>
@@ -22,7 +23,7 @@
 #include "soc/soc.h"
 #include "config.h"
 
-#define VERSION_SKETCH "1.0"
+#define VERSION_SKETCH "1.1"
 
 // ============================================================================
 // 0. DATOS: tipos y variables globales
@@ -410,7 +411,7 @@ static void imprimirCSV(const char *descripcion, uint32_t ts_us)
 // ============================================================================
 static bool cuentaRegresiva()
 {
-  Serial.println("\n>> Robot SOBRE EL SOPORTE, ruedas en el aire. Arranca en 3 s. Cualquier tecla cancela.");
+  Serial.println("\n>> Robot SOBRE EL SOPORTE, ruedas en el aire. Arranca en 3 s. Enter cancela.");
   vaciarEntrada();
   const uint32_t t = millis();
   while (millis() - t < 3000)
@@ -434,7 +435,7 @@ static bool leerMotor(char c, bool &usarL, bool &usarR)
   usarR = (c == 'R' || c == 'D' || c == 'A');
   if (!usarL && !usarR)
   {
-    Serial.println("Motor no válido: use L (izquierdo), R (derecho) o A (ambos).");
+    Serial.println("Motor no válido: use L (izquierdo), R (derecho) o A (ambos). Ej.: x R 10 5 14   o   s R 120");
     return false;
   }
   return true;
@@ -444,7 +445,8 @@ static void ayuda()
 {
   Serial.println(
       "\n=== Identificación de motores · Control Inteligente II ===\n"
-      " e                 Monitor de encoders (gire las ruedas a mano). Cualquier tecla sale.\n"
+      " Escriba el comando con letras y números reales y pulse Enter. Ej.: x R 10 5 14\n"
+      " e                 Monitor de encoders (gire las ruedas a mano). Enter sale.\n"
       " z                 Poner en cero las cuentas.\n"
       " c N               Cuentas por vuelta: tras 'z', gire cada rueda N vueltas a mano.\n"
       " d                 Prueba de sentido de motores y encoders.\n"
@@ -453,12 +455,12 @@ static void ayuda()
       " b V               Anotar el voltaje de la batería medido con el multímetro. Ej.: b 7.9\n"
       " h                 Esta ayuda.\n"
       " M = L (izquierdo), R (derecho) o A (ambos).\n"
-      " Ensayos con motores: robot en el soporte. Cualquier tecla detiene los motores.");
+      " Ensayos con motores: robot en el soporte. Enter detiene los motores.");
 }
 
 static void monitorEncoders()
 {
-  Serial.println("Gire las ruedas a mano. Cualquier tecla sale.");
+  Serial.println("Gire las ruedas a mano. Enter sale.");
   vaciarEntrada();
   while (!Serial.available())
   {
@@ -649,7 +651,7 @@ static void procesar(String linea)
     break;
   }
   default:
-    Serial.println("Comando desconocido. Escriba h para ver la ayuda.");
+    Serial.printf("Comando desconocido: \"%s\". Escriba h para ver la ayuda.\n", linea.c_str());
   }
 }
 
@@ -659,7 +661,6 @@ static void procesar(String linea)
 void setup()
 {
   Serial.begin(SERIAL_BAUD);
-  Serial.setTimeout(100); // así funciona con o sin fin de línea en el monitor
   const uint32_t t = millis();
   while (!Serial && millis() - t < 2000)
   {
@@ -683,8 +684,20 @@ void setup()
   ayuda();
 }
 
+// Junta los caracteres hasta el fin de línea: funciona igual si el monitor envía la línea
+// completa o tecla por tecla. Sin fin de línea no se ejecuta nada (evita ensayos a medias).
 void loop()
 {
-  if (Serial.available())
-    procesar(Serial.readStringUntil('\n'));
+  static String linea;
+  while (Serial.available())
+  {
+    const char ch = Serial.read();
+    if (ch == '\n' || ch == '\r')
+    {
+      procesar(linea);
+      linea = "";
+    }
+    else if (linea.length() < 64)
+      linea += ch;
+  }
 }
