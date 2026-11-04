@@ -1,0 +1,40 @@
+{
+  "grupo": "ejemplo",
+  "fecha": "2026-11-04",
+  "bateria_V": [
+    7.9
+  ],
+  "ensayos": [
+    "monitor_ejemplo.log"
+  ],
+  "motores": {
+    "L": {
+      "K_rpm_por_pwm": 0.23945,
+      "K_adelante": 0.23992,
+      "B_adelante_rpm": 2.05699,
+      "zona_muerta_adelante_pwm": 20,
+      "K_atras": 0.23898,
+      "B_atras_rpm": 1.9898,
+      "zona_muerta_atras_pwm": 25,
+      "tau_s": 0.02117,
+      "tau_freno_s": 0.01265,
+      "retardo_s": 0.00261,
+      "K_incremental_girando": 0.23899,
+      "cuentas_vuelta": 2618.0
+    },
+    "R": {
+      "K_rpm_por_pwm": 0.25002,
+      "K_adelante": 0.24849,
+      "B_adelante_rpm": 1.70988,
+      "zona_muerta_adelante_pwm": 20,
+      "K_atras": 0.25154,
+      "B_atras_rpm": 1.85452,
+      "zona_muerta_atras_pwm": 20,
+      "tau_s": 0.0196,
+      "tau_freno_s": 0.01174,
+      "retardo_s": 0.00192,
+      "K_incremental_girando": 0.24947,
+      "cuentas_vuelta": 2618.0
+    }
+  }
+}

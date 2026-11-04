@@ -7,3 +7,5 @@
 .vscode/ipch
 compile_commands.json
 logs
+.ipynb_checkpoints
+__pycache__

@@ -15,6 +15,10 @@ Placa ESP32-S3 con driver TB6612FNG y encoders en cuadratura (también funciona 
 | `src/config.h` | Pines, signos, cuentas por vuelta y tiempos de los ensayos | **Sí, cada grupo con los pines de su PCB** |
 | `src/main.cpp` | El programa | No |
 | `platformio.ini` | Placa, velocidad y configuración del monitor serie | No |
+| `GUIA.md` | **Guía del laboratorio**: fundamento, procedimiento, preguntas y entrega | No |
+| `notebook/ajuste_motor.ipynb` | Ajuste del modelo a partir de los CSV | Solo la celda 0 (grupo y carpeta de datos) |
+| `datos/ejemplo_sintetico/` | Log de ejemplo generado con un motor simulado, para probar el notebook | No |
+| `resultados/` | Aquí el notebook guarda `parametros_motor_<grupo>.json` | Lo llena el notebook |
 
 **PlatformIO (recomendado):** descargue el repositorio (`git clone` o *Code → Download ZIP*) y abra la carpeta en VS Code. El monitor serie ya queda configurado.
 
@@ -74,6 +78,18 @@ Cada ensayo imprime un bloque entre `INICIO_CSV` y `FIN_CSV`. Copie ese bloque a
 
 El «resultado rápido» que imprime el sketch es una estimación. El ajuste fino del modelo se hace con estos CSV.
 
+## Ajuste del modelo (notebook)
+
+1. Instale las dependencias: `pip install -r notebook/requirements.txt` (o abra el notebook en Google Colab y suba la carpeta de datos).
+2. Ponga sus CSV, o el log completo del monitor, en `datos/G<n>/`.
+3. Abra `notebook/ajuste_motor.ipynb`, cambie `GRUPO` y `RUTA_DATOS` en la celda 0 y ejecute todo.
+
+El notebook entrega la recta estática y la zona muerta de cada sentido, τ y el retardo de cada escalón, una validación del modelo contra las escaleras, el punto de partida del lazo de RPM y el archivo `resultados/parametros_motor_<grupo>.json`.
+
+Los datos de `datos/ejemplo_sintetico/` salen de un motor simulado. Sirven para probar el notebook antes de tener datos propios, no son medidas de un robot real.
+
+El procedimiento completo está en [GUIA.md](GUIA.md).
+
 ## Problemas comunes
 
 | Síntoma | Causa | Solución |
@@ -81,3 +97,5 @@ El «resultado rápido» que imprime el sketch es una estimación. El ajuste fin
 | No pasa nada al escribir un comando | El monitor no envía fin de línea | Arduino IDE: elija *Nueva línea*. Otros terminales: active el envío de CR o LF |
 | `Motor no válido` | Escribió la plantilla (`x M ...`) | Use `L`, `R` o `A` y números. Ej.: `x R 10 5 14` |
 | No carga el programa | El encoder conectado a GPIO 46 (pin de arranque) | Desconéctelo para cargar y vuelva a conectarlo |
+| Carga, pero el monitor no muestra nada | El cable está en el puerto USB nativo y el firmware usa el puerto UART (`ARDUINO_USB_CDC_ON_BOOT=0`) | Conecte el cable al puerto marcado UART o COM |
+| El notebook dice «0 ensayos» | `RUTA_DATOS` no apunta a la carpeta, o falta la línea `# ensayo=` en el bloque copiado | Revise la ruta y copie el bloque completo |
