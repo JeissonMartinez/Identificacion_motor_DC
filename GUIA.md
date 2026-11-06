@@ -92,7 +92,7 @@ $$\text{cuentas por vuelta de rueda} = \text{pulsos por vuelta del motor} \times
 
 En la práctica la reducción real no siempre coincide con la que dice el vendedor. Por ejemplo, en el robot del docente se midieron 2618 cuentas por vuelta, y no las que daba la hoja de datos. Por eso las cuentas por vuelta se miden a mano, girando la rueda un número exacto de vueltas.
 
-Hay que tener en cuenta también la resolución. Con 2618 cuentas por vuelta, una sola cuenta de diferencia en 4 ms equivale a 5,7 RPM. Es decir, la RPM calculada en ventanas muy cortas sale muy gruesa. Por eso el ajuste del modelo se hace sobre las **cuentas acumuladas**, que no tienen ese problema.
+Hay que tener en cuenta también la resolución. El contador del encoder solo tiene números enteros, así que la RPM calculada entre dos muestras va a saltos. En el escalón, el sketch toma una muestra cada 2 ms. Con 2618 cuentas por vuelta, una cuenta de diferencia en 2 ms equivale a 60 / (2618 · 0,002) = 11,5 RPM. Por ejemplo, una rueda que gira estable a 25 RPM avanza 2,2 cuentas cada 2 ms. Como el contador no tiene decimales, unas veces se leen 2 cuentas (22,9 RPM) y otras 3 (34,4 RPM). Ese salto lo produce el redondeo, no el motor. Una ventana más larga reduce el salto, pero también borra el arranque, que dura unos 20 ms. Por eso el ajuste del modelo se hace sobre las **cuentas acumuladas**. Ahí el error nunca pasa de una cuenta, mientras la rueda acumula cientos.
 
 ### 4.5 El freno en corto
 
