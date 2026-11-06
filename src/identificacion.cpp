@@ -197,6 +197,13 @@ static void aplicarPWM(Motor &m, int u)
     digitalWrite(m.pinIn1, LOW);
     digitalWrite(m.pinIn2, HIGH);
   }
+  else
+  {
+    // u = 0: freno en corto explícito (IN1 = IN2 = HIGH en el TB6612). Así el estado de los
+    // pines no depende del comando anterior y un cableado cruzado falla siempre igual.
+    digitalWrite(m.pinIn1, HIGH);
+    digitalWrite(m.pinIn2, HIGH);
+  }
   pwmEscribir(m, abs(v));
 }
 

@@ -16,15 +16,15 @@
 // 1. MOTORES — driver TB6612FNG
 //    Rueda izquierda (L) y rueda derecha (R). Escriba el número de GPIO.
 // ============================================================================
-#define MOTOR_L_PWM   18    // PWMB en el robot del docente
-#define MOTOR_L_IN1   16    // BIN1
-#define MOTOR_L_IN2   17    // BIN2
+#define MOTOR_L_PWM   4    // PWMB en el robot del docente
+#define MOTOR_L_IN1   8    // BIN1
+#define MOTOR_L_IN2   7    // BIN2
 
-#define MOTOR_R_PWM    5    // PWMA
-#define MOTOR_R_IN1    7    // AIN1
+#define MOTOR_R_PWM    15    // PWMA
+#define MOTOR_R_IN1    5    // AIN1
 #define MOTOR_R_IN2    6    // AIN2
 
-#define PIN_STBY      15    // Pin STBY del TB6612. Si STBY va fijo a 3.3 V, escriba -1
+#define PIN_STBY      -1    // Pin STBY del TB6612. Si STBY va fijo a 3.3 V, escriba -1
 
 #define MOTOR_L_SIGNO -1    // +1 o -1: hace que PWM positivo mueva la rueda hacia adelante
 #define MOTOR_R_SIGNO -1
@@ -34,13 +34,13 @@
 //    Si un canal B está dañado o no existe, escriba -1: el sketch cuenta solo
 //    con el canal A (x2) y toma el sentido del PWM aplicado.
 // ============================================================================
-#define ENC_L_A        9
-#define ENC_L_B       -1    // Robot del docente: el sensor B izquierdo está dañado
-#define ENC_R_A        3
-#define ENC_R_B       46    // GPIO 46 es pin de arranque: desconéctelo para cargar el programa
+#define ENC_L_A       38
+#define ENC_L_B       39    // Robot del docente: el sensor B izquierdo está dañado
+#define ENC_R_A       40
+#define ENC_R_B       47    // GPIO 46 es pin de arranque: desconéctelo para cargar el programa
 
-#define ENC_L_SIGNO   +1    // +1 o -1: hace que avanzar cuente positivo
-#define ENC_R_SIGNO   -1
+#define ENC_L_SIGNO   -1    // +1 o -1: hace que avanzar cuente positivo
+#define ENC_R_SIGNO   +1
 
 // Cuentas por vuelta de la RUEDA (no del eje del motor). Mídalas con el comando "c".
 #define CUENTAS_VUELTA_L  2993.8f
@@ -58,7 +58,7 @@
 // ============================================================================
 #define SERIAL_BAUD     115200
 #define MAX_MUESTRAS    4000      // 16 bytes por muestra: 64 kB de RAM
-#define PWM_SENTIDO     60        // PWM de la prueba de sentido ("d")
+#define PWM_SENTIDO     80        // PWM de la prueba de sentido ("d")
 
 // Escalón: tramos en ms y periodo de muestreo
 #define ESCALON_ANTES_MS     300

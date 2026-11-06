@@ -22,6 +22,7 @@
 // Elija el programa
 // ============================================================================
 #define PROGRAMA  PROG_IDENTIFICACION
+//PROG_IDENTIFICACION
 
 #if PROGRAMA == PROG_IDENTIFICACION
   #include "identificacion.cpp"
