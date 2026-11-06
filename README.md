@@ -19,6 +19,10 @@ Placa ESP32-S3 con driver TB6612FNG y encoders en cuadratura (también funciona 
 | `notebook/ajuste_motor.ipynb` | Ajuste del modelo a partir de los CSV | Solo la celda 0 (grupo y carpeta de datos) |
 | `datos/ejemplo_sintetico/` | Log de ejemplo generado con un motor simulado, para probar el notebook | No |
 | `resultados/` | Aquí el notebook guarda `parametros_motor_<grupo>.json` | Lo llena el notebook |
+| `lazo_rpm/` | **Taller 2.** Sketch de verificación del lazo de RPM de cada rueda (proyecto de PlatformIO aparte) | Solo `src/config.h` (el del Lab 1, tal cual) y `src/lazo_config.h` (lo genera el notebook) |
+| `GUIA_LAZO_RPM.md` | **Guía del laboratorio del lazo de RPM** | No |
+| `notebook/taller2_diseno.ipynb` | Taller 2: revisión del JSON, PI por λ, modelo en lazo cerrado frente a la medida, planta con α, ubicación de polos y simulación | Solo la celda 0 |
+| `datos/ejemplo_sintetico_lazo/` | Log de ejemplo del sketch `lazo_rpm`, generado con un motor simulado | No |
 
 **PlatformIO (recomendado):** descargue el repositorio (`git clone` o *Code → Download ZIP*) y abra la carpeta en VS Code. El monitor serie ya queda configurado.
 
@@ -103,6 +107,27 @@ El video 2 muestra la versión anterior de las secciones 5, 6 y 7. Estos son los
 | JSON | Sin versión | `"version": 2` y `"criterio_K_firmware": "por_sentido"` |
 
 Si su JSON no dice `"version": 2`, vuelva a ejecutar el notebook con sus mismos datos (*Run All*). El Taller 2 lee las dos versiones, pero con la nueva el retardo y el criterio de K quedan bien.
+
+## Lazo de RPM (Taller 2)
+
+El sketch `lazo_rpm/` cierra un lazo de RPM en cada rueda, cada 5 ms, con el modelo del Lab 1. Usa una prealimentación con la inversa de la recta, un PI por cancelación de polo (Ti = τ, Kp = τ/(K_m·(λ + L_total))) e integración condicional. El procedimiento está en [GUIA_LAZO_RPM.md](GUIA_LAZO_RPM.md).
+
+1. Copie su `src/config.h` del Lab 1 encima de `lazo_rpm/src/config.h`.
+2. Genere `lazo_rpm/src/lazo_config.h` con la sección A.2 de `notebook/taller2_diseno.ipynb`.
+3. Abra la carpeta `lazo_rpm` en VS Code como proyecto de PlatformIO, cargue y abra el monitor.
+
+| Comando | Qué hace |
+|---|---|
+| `r M rpm [base]` | Escalón de consigna base → rpm → base. Ej.: `r A 30 10`. Atrás: `r A -30 -10`. Cruce por cero: `r A -10 10` |
+| `l ms` | λ del diseño. Recalcula Kp y Ki. Ej.: `l 30` |
+| `k s` / `k p` | Criterio de K: por sentido (el del firmware) o promediado (para comparar) |
+| `f 1` / `f 0` | Prealimentación encendida o apagada |
+| `m ms` | Modelo de referencia: filtra la consigna con esa τ. `m 0` lo apaga |
+| `b V` | Anota la batería en cada CSV |
+| `v` | Muestra el modelo y el diseño vigente (Kp y Ki por rueda y sentido) |
+| `h` | Ayuda |
+
+Cada ensayo imprime un bloque CSV con las columnas `t_us, rL, rR, uL, uR, cL, cR`: tiempo, consigna, PWM y cuentas de cada rueda. La línea `#` guarda el diseño con que se corrió.
 
 ## Problemas comunes
 
