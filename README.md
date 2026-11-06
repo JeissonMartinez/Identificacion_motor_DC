@@ -1,6 +1,6 @@
 # Identificación de motores · Control Inteligente II (168418)
 
-Sketch de banco para identificar el modelo de cada motor del balancín:
+Firmware de banco para identificar el modelo de cada motor del balancín y verificar el lazo de RPM diseñado con ese modelo. El programa de identificación entrega:
 
 - la **recta estática** RPM ≈ K·PWM − B;
 - la **zona muerta** (PWM mínimo con el que arranca la rueda);
@@ -13,20 +13,35 @@ Placa ESP32-S3 con driver TB6612FNG y encoders en cuadratura (también funciona 
 | Archivo | Qué es | ¿Se modifica? |
 |---|---|---|
 | `src/config.h` | Pines, signos, cuentas por vuelta y tiempos de los ensayos | **Sí, cada grupo con los pines de su PCB** |
-| `src/main.cpp` | El programa | No |
-| `platformio.ini` | Placa, velocidad y configuración del monitor serie | No |
+| `src/main.cpp` | **Selector**: elige qué programa se compila (`PROGRAMA`) | Solo la línea `#define PROGRAMA` |
+| `src/identificacion.cpp` | Programa de identificación de los motores (Lab 1) | No |
+| `src/control_rpm.cpp` | Programa del lazo de RPM de cada rueda (Taller 2) | No |
+| `src/lazo_config.h` | Modelo de los motores y diseño del lazo. Lo usa `control_rpm` | Lo genera el notebook del Taller 2 |
+| `platformio.ini` | Placa, velocidad, monitor serie y filtro de compilación (solo compila `main.cpp`) | No |
 | `GUIA.md` | **Guía del laboratorio**: fundamento, procedimiento, preguntas y entrega | No |
 | `notebook/ajuste_motor.ipynb` | Ajuste del modelo a partir de los CSV | Solo la celda 0 (grupo y carpeta de datos) |
 | `datos/ejemplo_sintetico/` | Log de ejemplo generado con un motor simulado, para probar el notebook | No |
 | `resultados/` | Aquí el notebook guarda `parametros_motor_<grupo>.json` | Lo llena el notebook |
-| `lazo_rpm/` | **Taller 2.** Sketch de verificación del lazo de RPM de cada rueda (proyecto de PlatformIO aparte) | Solo `src/config.h` (el del Lab 1, tal cual) y `src/lazo_config.h` (lo genera el notebook) |
+| `datos/profesor/` | Log del monitor con los motores del prototipo del profesor (6 de noviembre de 2026) | No |
+| `lazo_rpm/` | Versión anterior del Taller 2 como proyecto de PlatformIO aparte. Ahora el mismo programa está en `src/control_rpm.cpp` | No |
 | `GUIA_LAZO_RPM.md` | **Guía del laboratorio del lazo de RPM** | No |
 | `notebook/taller2_diseno.ipynb` | Taller 2: revisión del JSON, PI por λ, modelo en lazo cerrado frente a la medida, planta con α, ubicación de polos y simulación | Solo la celda 0 |
-| `datos/ejemplo_sintetico_lazo/` | Log de ejemplo del sketch `lazo_rpm`, generado con un motor simulado | No |
+| `datos/ejemplo_sintetico_lazo/` | Log de ejemplo del programa `control_rpm`, generado con un motor simulado | No |
 
 **PlatformIO (recomendado):** descargue el repositorio (`git clone` o *Code → Download ZIP*) y abra la carpeta en VS Code. El monitor serie ya queda configurado.
 
-**Arduino IDE:** cree una carpeta `identificacion_motor`, copie ahí `src/config.h` y `src/main.cpp`, y cambie el nombre de `main.cpp` a `identificacion_motor.ino`.
+**Arduino IDE:** cree una carpeta con el nombre del programa, por ejemplo `identificacion`, copie ahí `src/config.h` y `src/identificacion.cpp`, y cambie el nombre de `identificacion.cpp` a `identificacion.ino`. Para el lazo de RPM: carpeta `control_rpm` con `config.h`, `lazo_config.h` y `control_rpm.cpp` renombrado a `control_rpm.ino`.
+
+## Elegir el programa
+
+Los dos programas están en `src/` y comparten `config.h`. En `src/main.cpp` cambie esta línea, compile y cargue:
+
+```cpp
+#define PROGRAMA  PROG_IDENTIFICACION   // identificación de los motores (Lab 1)
+#define PROGRAMA  PROG_CONTROL_RPM      // lazo de RPM (Taller 2)
+```
+
+(Deje solo una de las dos.) `platformio.ini` compila solo `main.cpp` (`build_src_filter = -<*> +<main.cpp>`), y `main.cpp` incluye el programa elegido. Así no se repiten `setup()`, `loop()` ni las variables globales. Si agrega otro `.cpp` a `src/`, inclúyalo desde `main.cpp` o agréguelo al filtro.
 
 ## Antes de empezar
 
@@ -78,7 +93,7 @@ Cada ensayo imprime un bloque entre `INICIO_CSV` y `FIN_CSV`. Copie ese bloque a
 
 - La primera línea (`#`) guarda el ensayo, la batería y las cuentas por vuelta.
 - Las columnas son el tiempo en µs, el PWM de cada motor y las cuentas de cada encoder.
-- Para guardar todo lo que imprime el monitor en un archivo, agregue `log2file` a `monitor_filters` en `platformio.ini` (queda en la carpeta `logs/`). También sirve un terminal que guarde a archivo (CoolTerm, PuTTY).
+- `platformio.ini` ya trae el filtro `log2file`: todo lo que imprime el monitor queda guardado en la carpeta `logs/` (git no la sube). Copie ese log a `datos/G<n>/` para el notebook. Con el Arduino IDE sirve un terminal que guarde a archivo (CoolTerm, PuTTY).
 
 El «resultado rápido» que imprime el sketch es una estimación. El ajuste fino del modelo se hace con estos CSV.
 
@@ -90,7 +105,7 @@ El «resultado rápido» que imprime el sketch es una estimación. El ajuste fin
 
 El notebook entrega la recta estática y la zona muerta de cada sentido, τ y el retardo de cada escalón, una validación del modelo contra las escaleras, el punto de partida del lazo de RPM y el archivo `resultados/parametros_motor_<grupo>.json`.
 
-Los datos de `datos/ejemplo_sintetico/` salen de un motor simulado. Sirven para probar el notebook antes de tener datos propios, no son medidas de un robot real.
+Los datos de `datos/ejemplo_sintetico/` salen de un motor simulado. Sirven para probar el notebook antes de tener datos propios, no son medidas de un robot real. Los de `datos/profesor/` sí son medidas: los motores del prototipo del profesor, con su resultado en `resultados/parametros_motor_Profesor.json`.
 
 El procedimiento completo está en [GUIA.md](GUIA.md).
 
@@ -110,11 +125,11 @@ Si su JSON no dice `"version": 2`, vuelva a ejecutar el notebook con sus mismos 
 
 ## Lazo de RPM (Taller 2)
 
-El sketch `lazo_rpm/` cierra un lazo de RPM en cada rueda, cada 5 ms, con el modelo del Lab 1. Usa una prealimentación con la inversa de la recta, un PI por cancelación de polo (Ti = τ, Kp = τ/(K_m·(λ + L_total))) e integración condicional. El procedimiento está en [GUIA_LAZO_RPM.md](GUIA_LAZO_RPM.md).
+El programa `src/control_rpm.cpp` cierra un lazo de RPM en cada rueda, cada 5 ms, con el modelo del Lab 1. Usa una prealimentación con la inversa de la recta, un PI por cancelación de polo (Ti = τ, Kp = τ/(K_m·(λ + L_total))) e integración condicional. El procedimiento está en [GUIA_LAZO_RPM.md](GUIA_LAZO_RPM.md).
 
-1. Copie su `src/config.h` del Lab 1 encima de `lazo_rpm/src/config.h`.
-2. Genere `lazo_rpm/src/lazo_config.h` con la sección A.2 de `notebook/taller2_diseno.ipynb`.
-3. Abra la carpeta `lazo_rpm` en VS Code como proyecto de PlatformIO, cargue y abra el monitor.
+1. Use el mismo `src/config.h` del Lab 1 (pines, signos y cuentas por vuelta). No hay que copiarlo: los dos programas lo comparten.
+2. Genere `src/lazo_config.h` con la sección A.2 de `notebook/taller2_diseno.ipynb`. El que viene en el repositorio tiene los valores del ejemplo sintético.
+3. En `src/main.cpp` ponga `#define PROGRAMA  PROG_CONTROL_RPM`, cargue y abra el monitor.
 
 | Comando | Qué hace |
 |---|---|
