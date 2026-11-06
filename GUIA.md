@@ -94,7 +94,7 @@ En la práctica la reducción real no siempre coincide con la que dice el vended
 
 Hay que tener en cuenta también la resolución. El contador del encoder solo tiene números enteros, así que la RPM calculada entre dos muestras va a saltos. En el escalón, el sketch toma una muestra cada 2 ms. Con 2618 cuentas por vuelta, una cuenta de diferencia en 2 ms equivale a 60 / (2618 · 0,002) = 11,5 RPM. Por ejemplo, una rueda que gira estable a 25 RPM avanza 2,2 cuentas cada 2 ms. Como el contador no tiene decimales, unas veces se leen 2 cuentas (22,9 RPM) y otras 3 (34,4 RPM). Ese salto lo produce el redondeo, no el motor. Una ventana más larga reduce el salto, pero también borra el arranque, que dura unos 20 ms.
 
-Por eso el ajuste del modelo no usa la RPM, sino las **cuentas acumuladas**, es decir, el valor del contador, que va sumando mientras la rueda gira. Ese valor también se redondea, pero el error nunca pasa de una cuenta y no crece con el tiempo. Con la rueda a 25 RPM, en 250 ms (la ventana de ajuste del notebook) el contador sube unas 273 cuentas, y una cuenta de error es menos del 0,4 %. En cambio, entre dos muestras separadas 2 ms solo hay unas 2 cuentas, y una cuenta de error cambia la RPM en casi la mitad.
+Por eso el ajuste del modelo no usa la RPM, sino las **cuentas acumuladas**, es decir, el valor del contador, que va sumando mientras la rueda gira. El contador solo cambia cuando la rueda avanza una cuenta completa (1/2618 de vuelta, unos 0,14°). Si la rueda está a mitad de camino entre dos cuentas, el contador todavía muestra la anterior. Así, el contador nunca se equivoca en más de una cuenta frente a la posición real, y ese error no crece con el tiempo. Con la rueda a 25 RPM, en 250 ms (la ventana de ajuste del notebook) el contador sube unas 273 cuentas, y equivocarse en una es menos del 0,4 %. En cambio, entre dos muestras separadas 2 ms solo hay unas 2 cuentas, y equivocarse en una cambia la RPM en casi la mitad.
 
 ### 4.5 El freno en corto
 
@@ -106,11 +106,75 @@ Después de un cambio de PWM de u₀ a u₁, la RPM pasa de r₀ a r₁ siguiend
 
 $$RPM(t) = r_0 + (r_1 - r_0)\left(1 - e^{-(t-L)/\tau}\right), \qquad t \ge L$$
 
-El firmware da una primera estimación con el **método del área**. Si la rueda saltara de inmediato de r₀ a r₁, en T segundos giraría r₁·T. Lo que giró de verdad es menos, y eso lo dicen las cuentas. Entonces:
+donde:
+
+- u₀ es el PWM antes del cambio y u₁ el PWM después del cambio.
+- r₀ es la RPM estable antes del cambio. El firmware y el notebook la calculan como la RPM media de los últimos 60 ms antes del cambio.
+- r₁ es la RPM estable a la que llega la rueda con u₁. Se calcula como la RPM media de la segunda mitad del escalón, cuando la rueda ya se estabilizó.
+- t es el tiempo contado desde el instante del cambio de PWM.
+- L es el retardo, es decir, el tiempo que pasa desde el cambio de PWM hasta que la RPM empieza a moverse. Antes de L, la RPM sigue en r₀.
+- τ es la constante de tiempo. En t = L + τ la RPM ya recorrió el 63 % del camino entre r₀ y r₁.
+
+Por ejemplo, con `s R 120 60` la rueda derecha está en PWM 60 y pasa a PWM 120, así que u₀ = 60 y u₁ = 120. Si a PWM 60 la rueda giraba a unas 13 RPM y con PWM 120 llega a unas 28 RPM, entonces r₀ ≈ 13 RPM y r₁ ≈ 28 RPM.
+
+#### Método del área
+
+El firmware da una primera estimación con el **método del área**. La idea es comparar dos áreas bajo la curva de la RPM, desde el cambio (t = 0) hasta un tiempo T. Si la rueda saltara de inmediato de r₀ a r₁, esa área sería r₁·T. La rueda real tarda en subir, así que su área es menor. El área que falta, dividida por el salto r₁ − r₀, es τ + L:
 
 $$\tau + L = \frac{r_1\,T - \int_0^T RPM\,dt}{r_1 - r_0}$$
 
-donde la integral de la RPM sale directamente de las cuentas. Luego, en el notebook, τ y L se ajustan por separado con mínimos cuadrados, comparando la integral del modelo con las cuentas medidas. Los dos métodos deben dar parecido. Si no dan parecido, hay algo que revisar en los datos.
+![Método del área: el área que le falta a la rueda real equivale a un rectángulo de alto r₁ − r₀ y ancho τ + L](img/metodo_area.png)
+
+*Figura 1. Método del área con valores de ejemplo (r₀ = 13 RPM, r₁ = 28 RPM, τ = 21 ms, L = 2,5 ms). A la izquierda, el área sombreada es la diferencia entre el salto ideal y la RPM real. La parte que queda debajo de la curva real es común a las dos áreas y se cancela. A la derecha, esa misma área se dibuja como un rectángulo de alto r₁ − r₀ y ancho τ + L.*
+
+T tiene que ser bastante más largo que τ + L, para que al final la RPM ya esté en r₁. El firmware y el notebook usan T = 250 ms, más de 10 veces τ.
+
+La integral no se calcula a partir de la RPM. Sale directamente de las cuentas, con t en segundos:
+
+$$\int_0^T RPM\,dt = 60 \cdot \frac{\text{cuentas giradas entre } 0 \text{ y } T}{\text{cuentas por vuelta}}$$
+
+Por eso este método no tiene el problema de resolución de la sección 4.4.
+
+#### El área no separa τ de L
+
+El área solo da la suma τ + L. Dos respuestas con la misma suma tienen la misma área que falta, aunque arranquen distinto. La figura 2 lo muestra. Una curva arranca de una vez y sube despacio (τ = 23,5 ms, L = 0). La otra espera 10 ms y luego sube rápido (τ = 13,5 ms, L = 10 ms). La zona A, donde la primera va adelante, tiene la misma área que la zona B, donde va adelante la segunda. Las dos zonas se compensan, y el método del área da 23,5 ms para las dos curvas.
+
+![Dos respuestas con la misma τ + L: una arranca de una vez y sube despacio, la otra espera y sube rápido](img/misma_suma.png)
+
+*Figura 2. Dos respuestas con la misma τ + L = 23,5 ms. El método del área no las distingue. Lo que cambia es la forma del arranque.*
+
+Entonces hay dos caminos:
+
+- **El firmware no separa τ de L.** Supone que L es casi cero y reporta τ + L como si fuera τ. Es una estimación rápida, que sirve para comparar ensayos en el banco. Como L suele valer entre 0 y 4 ms y τ unos 20 ms, esa τ sale un poco mayor que la real.
+- **El notebook separa τ de L mirando la forma del arranque**, con mínimos cuadrados. Ese ajuste entrega τ y L por separado, y son los valores que se usan en el modelo.
+
+Separar τ de L no es fácil, porque la diferencia de forma es pequeña. En la figura 2, aun con L = 10 ms, las cuentas de una curva y de la otra nunca se separan más de 2,4 cuentas.
+
+#### Mínimos cuadrados
+
+La idea es buscar la pareja (τ, L) con la que el modelo se parece más a lo que midió el encoder, en toda la curva y no solo en su área.
+
+El modelo no se compara con la RPM, por el problema de resolución de la sección 4.4. Se compara con las cuentas. Para eso, la RPM del modelo se integra y se pasa a cuentas, contando desde el instante del cambio:
+
+$$c_{mod}(t) = \frac{\text{cuentas por vuelta}}{60}\Big[r_0\,t + (r_1-r_0)\big((t-L) - \tau\,(1-e^{-(t-L)/\tau})\big)\Big], \qquad t \ge L$$
+
+Antes de L la rueda sigue en r₀, así que ahí solo queda el término r₀·t.
+
+Para cada pareja (τ, L) que se prueba, se calcula en cada muestra la diferencia entre las cuentas medidas y las del modelo. Esas diferencias se elevan al cuadrado y se suman:
+
+$$J(\tau, L) = \sum_k \big(c_{med}(t_k) - c_{mod}(t_k)\big)^2$$
+
+Se elevan al cuadrado para que una diferencia positiva y una negativa no se cancelen, y para que una diferencia grande pese más que varias pequeñas. La pareja con la J más pequeña es el resultado.
+
+El notebook no prueba todas las parejas una por una. La función `least_squares` de SciPy arranca en τ = 20 ms y L = 2 ms, y va cambiando los dos valores en la dirección en que J baja, hasta que ya no baja más. r₀ y r₁ no se ajustan, porque ya se midieron. Al final, el notebook reporta el error RMS, que es la raíz del promedio de esos cuadrados, en cuentas. Un buen ajuste queda por debajo de una cuenta, que es la resolución del encoder.
+
+![Mínimos cuadrados: tres parejas de prueba frente a las cuentas medidas, y el mapa del error con su mínimo](img/minimos_cuadrados.png)
+
+*Figura 3. Mínimos cuadrados con datos sintéticos. Las cuentas medidas salen del modelo con τ = 21 ms y L = 2,5 ms, redondeadas a enteros como hace el contador. A la izquierda, tres parejas de prueba. Con τ muy pequeña el modelo cuenta de más, con τ muy grande cuenta de menos, y el mejor ajuste pasa por la escalera de las cuentas medidas. A la derecha, el error de cada pareja (τ, L). Entre más oscuro, menor es el error. El ajuste da τ = 20,9 ms y L = 2,8 ms, y la diferencia con los valores reales la produce el redondeo del contador.*
+
+Fíjense en que el valle oscuro de la figura 3 es una franja diagonal que sigue la recta τ + L = constante. Eso quiere decir que las parejas con la misma suma τ + L dan errores pequeños y parecidos. En el ejemplo, todas las de la recta quedan por debajo de una cuenta, mientras que subir L unos 3 ms, dejando τ igual, lleva el error a 2 cuentas. La suma la fija el área, y lo que separa τ de L es la forma del arranque. Por eso el ajuste mide bien la suma τ + L, y L por sí sola es el valor menos confiable.
+
+Los dos métodos deben dar parecido. Es decir, la τ + L del método del área debe parecerse a la suma de τ y L de mínimos cuadrados. Si no se parecen, hay algo que revisar en los datos.
 
 ---
 
@@ -194,7 +258,7 @@ Cada escalón dura 2,5 s (300 ms en la base, 1500 ms en el escalón y 700 ms de 
 
 Guarden cada bloque como `G<n>_<motor>_escalon_<base>_<pwm>.csv`, por ejemplo `G3_R_escalon_60_120.csv`.
 
-En cada escalón el firmware imprime una estimación rápida de K y τ. Comparen entre ensayos. Las τ al acelerar deben ser parecidas entre sí, y la τ al volver a PWM 0 debe salir menor por el freno en corto.
+En cada escalón el firmware imprime una estimación rápida de K y de τ. Esa τ es en realidad τ + L, porque sale del método del área (sección 4.6). Comparen entre ensayos. Las τ al acelerar deben ser parecidas entre sí, y la τ al volver a PWM 0 debe salir menor por el freno en corto.
 
 ### Parte F · Ajuste del modelo (30 min, y se termina fuera de clase)
 
@@ -218,6 +282,19 @@ Respóndanlas con sus datos, con números y en frases cortas.
 4. Con su τ y la resolución de su encoder, ¿qué limita más la rapidez del lazo de RPM, el motor o la medición de la RPM? Calculen cuántas RPM vale una cuenta en una ventana de 10 ms.
 5. Si la batería baja de 8,4 V a 7,4 V, ¿cuánto cambia K según la sección 4.2? ¿Qué parte del lazo de RPM tiene que corregir eso?
 6. Con la RPM máxima de su motor (PWM 255), calculen la velocidad máxima del robot en m/s. El lazo de equilibrio necesita reserva de velocidad para recuperarse cuando el robot se inclina. ¿Qué velocidad de avance les parece razonable para la pista, y por qué?
+
+### Tarea propuesta · Otros métodos de identificación
+
+El notebook calcula τ y L con mínimos cuadrados, pero hay otros métodos. Prueben dos métodos clásicos con uno de sus escalones con la rueda ya girando (por ejemplo, `s R 120 60`) y compárenlos con el notebook. Usen la gráfica de RPM de la sección 4 del notebook. Con la variable `ver` escogen la transición.
+
+1. **Método de Smith (dos puntos).** Busquen el instante t₁ en que la RPM llega a r₀ + 0,283·(r₁ − r₀) y el instante t₂ en que llega a r₀ + 0,632·(r₁ − r₀). Luego calculen τ = 1,5·(t₂ − t₁) y L = t₂ − τ.
+2. **Método de Ziegler y Nichols (tangente).** Tracen la recta tangente a la curva de RPM en el punto donde sube más rápido. Esa recta corta a r₀ en t = L y a r₁ en t = L + τ.
+3. Hagan una tabla con τ y L de los tres métodos y respondan:
+   - ¿Cuál de los dos métodos clásicos se acerca más al notebook?
+   - ¿Por qué los métodos que leen la curva de RPM dan valores distintos? Piensen en la resolución de la sección 4.4.
+   - ¿Cuál usarían para su robot, y por qué?
+
+Pongan la tabla y las respuestas en `RESULTADOS.md`.
 
 ---
 
@@ -272,5 +349,7 @@ La entrega está completa cuando se cumple todo esto:
 - Guía del modelado del balancín (Tema 1) y videos de los pasos 12 a 16.
 - Valores medidos en el robot del docente, como referencia (rueda derecha, batería a 7,65 V): K = 0,25 RPM/PWM, B = 1,8 RPM, zona muerta 16 adelante y 20 atrás, τ ≈ 20 ms, τ de freno 10–15 ms, retardo de 0 a 4 ms, 2618 cuentas por vuelta.
 - K. Ogata, *Ingeniería de control moderna*, 5.ª ed., Pearson, 2010. Modelo del motor DC.
+- J. G. Ziegler y N. B. Nichols, «Optimum settings for automatic controllers», *Transactions of the ASME*, vol. 64, pp. 759–768, 1942. Método de la tangente (curva de reacción).
+- C. L. Smith, *Digital Computer Process Control*, Intext, 1972. Método de los dos puntos (28,3 % y 63,2 %).
 - K. J. Åström y T. Hägglund, *Advanced PID Control*, ISA, 2006. Método de las áreas e identificación de modelos de primer orden con retardo.
 - Toshiba, *TB6612FNG Datasheet*. Tabla de verdad del driver: sentido, freno en corto y *standby*.
