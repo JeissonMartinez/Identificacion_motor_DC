@@ -26,8 +26,8 @@
 
 #define PIN_STBY      15    // Pin STBY del TB6612. Si STBY va fijo a 3.3 V, escriba -1
 
-#define MOTOR_L_SIGNO +1    // +1 o -1: hace que PWM positivo mueva la rueda hacia adelante
-#define MOTOR_R_SIGNO +1
+#define MOTOR_L_SIGNO -1    // +1 o -1: hace que PWM positivo mueva la rueda hacia adelante
+#define MOTOR_R_SIGNO -1
 
 // ============================================================================
 // 2. ENCODERS — cuadratura A/B
@@ -40,11 +40,11 @@
 #define ENC_R_B       46    // GPIO 46 es pin de arranque: desconéctelo para cargar el programa
 
 #define ENC_L_SIGNO   +1    // +1 o -1: hace que avanzar cuente positivo
-#define ENC_R_SIGNO   +1
+#define ENC_R_SIGNO   -1
 
 // Cuentas por vuelta de la RUEDA (no del eje del motor). Mídalas con el comando "c".
-#define CUENTAS_VUELTA_L  2618.0f
-#define CUENTAS_VUELTA_R  2618.0f
+#define CUENTAS_VUELTA_L  2993.8f
+#define CUENTAS_VUELTA_R  2498.8f
 
 // ============================================================================
 // 3. PWM

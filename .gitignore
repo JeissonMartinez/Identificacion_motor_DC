@@ -9,3 +9,4 @@ compile_commands.json
 logs
 .ipynb_checkpoints
 __pycache__
+ci2_env/
