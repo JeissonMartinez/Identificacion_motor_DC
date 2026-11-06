@@ -1,6 +1,9 @@
 {
   "grupo": "ejemplo",
-  "fecha": "2026-11-04",
+  "fecha": "2026-11-05",
+  "version": 2,
+  "criterio_K_firmware": "por_sentido",
+  "nota": "Recta RPM = K·PWM − B por sentido. tau_s y retardo_s salen de las transiciones que no terminan en PWM 0. K_promedio y B_promedio_rpm son solo para comparar.",
   "bateria_V": [
     7.9
   ],
@@ -9,31 +12,39 @@
   ],
   "motores": {
     "L": {
-      "K_rpm_por_pwm": 0.23945,
       "K_adelante": 0.23992,
       "B_adelante_rpm": 2.05699,
       "zona_muerta_adelante_pwm": 20,
       "K_atras": 0.23898,
       "B_atras_rpm": 1.9898,
       "zona_muerta_atras_pwm": 25,
+      "K_promedio": 0.23945,
+      "B_promedio_rpm": 2.0234,
+      "zona_muerta_promedio_pwm": 22,
       "tau_s": 0.02117,
+      "retardo_s": 0.00269,
       "tau_freno_s": 0.01265,
-      "retardo_s": 0.00261,
-      "K_incremental_girando": 0.23899,
+      "retardo_freno_s": 0.0022,
+      "K_incremental_girando_adelante": 0.24046,
+      "K_incremental_girando_atras": 0.23753,
       "cuentas_vuelta": 2618.0
     },
     "R": {
-      "K_rpm_por_pwm": 0.25002,
       "K_adelante": 0.24849,
       "B_adelante_rpm": 1.70988,
       "zona_muerta_adelante_pwm": 20,
       "K_atras": 0.25154,
       "B_atras_rpm": 1.85452,
       "zona_muerta_atras_pwm": 20,
+      "K_promedio": 0.25002,
+      "B_promedio_rpm": 1.7822,
+      "zona_muerta_promedio_pwm": 20,
       "tau_s": 0.0196,
+      "retardo_s": 0.0023,
       "tau_freno_s": 0.01174,
-      "retardo_s": 0.00192,
-      "K_incremental_girando": 0.24947,
+      "retardo_freno_s": 0.0016,
+      "K_incremental_girando_adelante": 0.24588,
+      "K_incremental_girando_atras": 0.25305,
       "cuentas_vuelta": 2618.0
     }
   }

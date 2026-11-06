@@ -90,6 +90,20 @@ Los datos de `datos/ejemplo_sintetico/` salen de un motor simulado. Sirven para 
 
 El procedimiento completo está en [GUIA.md](GUIA.md).
 
+### Cambios en el notebook después del video 2 (5 de noviembre de 2026)
+
+El video 2 muestra la versión anterior de las secciones 5, 6 y 7. Estos son los cambios:
+
+| Qué | Antes | Ahora |
+|---|---|---|
+| Retardo `retardo_s` | Mediana de todas las transiciones, incluidas las que frenan a PWM 0 | Mediana de las transiciones que **no** terminan en PWM 0, igual que τ. El retardo de freno queda en `retardo_freno_s` |
+| Criterio de K | El JSON guardaba `K_rpm_por_pwm` (promedio de los dos sentidos), pero el PI y la validación usaban la K de adelante | **Una recta por sentido** en la prealimentación, el PI y la validación. La recta promediada (`K_promedio`, `B_promedio_rpm`) queda en el JSON solo para comparar |
+| Validación | Solo con la recta de cada sentido | Con los dos criterios, con el error RMS de cada uno |
+| PI de partida | Con la K de adelante | Un Kp por sentido, y la fila promediada para comparar |
+| JSON | Sin versión | `"version": 2` y `"criterio_K_firmware": "por_sentido"` |
+
+Si su JSON no dice `"version": 2`, vuelva a ejecutar el notebook con sus mismos datos (*Run All*). El Taller 2 lee las dos versiones, pero con la nueva el retardo y el criterio de K quedan bien.
+
 ## Problemas comunes
 
 | Síntoma | Causa | Solución |
