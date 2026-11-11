@@ -148,12 +148,12 @@ Robot en el piso. Una persona con las manos cerca, **sin tocarlo**. Cambien las 
 
 | Paso | Qué hacer | Qué deben ver |
 |---|---|---|
-| C1 | `k Kθ Kω Kv 0` (las suyas, con $K_x = 0$) y `e` con el robot vertical | Se sostiene solo y se va corriendo despacio |
+| C1 | `k Kθ Kω Kv 0` (las suyas, con $K_x = 0$) y `e` con el robot vertical | Se sostiene solo y rueda a velocidad constante. Entre mejor esté $\theta_0$, más despacio rueda |
 | C2 | `p`, `k Kθ Kω Kv Kx` (las cuatro) y `e` | Se sostiene y se queda cerca de donde se armó |
 | C3 | 30 s sin tocarlo. Guarden el registro (`log2file`) | `theta` cerca de 0 y `x` cerca de 0 |
 | C4 | Dos empujoncitos suaves con un dedo, con 5 s entre ellos. Guarden el registro | Se recupera y vuelve a su sitio |
 
-Si el robot se queda quieto pero inclinado y corrido, el problema es $\theta_0$:
+Si el robot se queda quieto pero corrido de donde se armó, y `theta` no da 0, el problema es $\theta_0$:
 
 ![θ0 mal puesto](img/estructura/theta0_desplazamiento.png)
 
