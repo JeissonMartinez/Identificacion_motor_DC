@@ -127,7 +127,7 @@ Si su JSON no dice `"version": 2`, vuelva a ejecutar el notebook con sus mismos 
 
 ## Lazo de RPM (Taller 2)
 
-El programa `src/control_rpm.cpp` cierra un lazo de RPM en cada rueda, cada 5 ms, con el modelo del Lab 1. Usa una prealimentación con la inversa de la recta, un PI por cancelación de polo (Ti = τ, Kp = τ/(K_m·(λ + L_total))) e integración condicional. El procedimiento está en [GUIA_LAZO_RPM.md](GUIA_LAZO_RPM.md).
+El programa `src/control_rpm.cpp` cierra un lazo de RPM en cada rueda, cada 5 ms, con el modelo del Lab 1. Usa una prealimentación con la inversa de la recta, un PI por cancelación de polo (Ti = τ, Kp = τ/(K_m·(λ + L_total))) e integración condicional. El procedimiento está en [GUIA_LAZO_RPM_v2.md](GUIA_LAZO_RPM_v2.md). La primera versión, [GUIA_LAZO_RPM.md](GUIA_LAZO_RPM.md), se conserva sin cambios.
 
 1. Use el mismo `src/config.h` del Lab 1 (pines, signos y cuentas por vuelta). No hay que copiarlo: los dos programas lo comparten.
 2. Genere `src/lazo_config.h` con la sección A.2 de `notebook/taller2_diseno.ipynb`. El que viene en el repositorio tiene los valores del ejemplo sintético.
