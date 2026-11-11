@@ -25,6 +25,8 @@ Placa ESP32-S3 con driver TB6612FNG y encoders en cuadratura (también funciona 
 | `datos/profesor/` | Log del monitor con los motores del prototipo del profesor (6 de noviembre de 2026) | No |
 | `lazo_rpm/` | Versión anterior del Taller 2 como proyecto de PlatformIO aparte. Ahora el mismo programa está en `src/control_rpm.cpp` | No |
 | `GUIA_LAZO_RPM.md` | **Guía del laboratorio del lazo de RPM** | No |
+| `GUIA_ESTRUCTURA_ESTADOS.md` | **Guía del laboratorio del 11 de noviembre**: primer equilibrio con la estructura de estados | No |
+| `estructura_estados/` | Esqueleto para el firmware de cada grupo: el lazo de RPM de una rueda (`lazo_rpm_nucleo.h`), el lazo de equilibrio (`estructura_estados.h`) y el ciclo de 5 ms (`esqueleto_equilibrio.cpp`) | Solo los `TODO` del esqueleto y las ganancias |
 | `notebook/taller2_diseno.ipynb` | Taller 2: revisión del JSON, PI por λ, modelo en lazo cerrado frente a la medida, planta con α, ubicación de polos y simulación | Solo la celda 0 |
 | `datos/ejemplo_sintetico_lazo/` | Log de ejemplo del programa `control_rpm`, generado con un motor simulado | No |
 
@@ -143,6 +145,26 @@ El programa `src/control_rpm.cpp` cierra un lazo de RPM en cada rueda, cada 5 ms
 | `h` | Ayuda |
 
 Cada ensayo imprime un bloque CSV con las columnas `t_us, rL, rR, uL, uR, cL, cR`: tiempo, consigna, PWM y cuentas de cada rueda. La línea `#` guarda el diseño con que se corrió.
+
+## Estructura de estados (11 de noviembre)
+
+El lazo de equilibrio pide una aceleración de rueda con los cuatro estados y la integra en la RPM deseada de las dos ruedas:
+
+$$
+\alpha = K_\theta\,\theta + K_\omega\,\dot\theta + K_v\,v + K_x\,x, \qquad v \leftarrow v + \alpha\,T_s
+$$
+
+La carpeta `estructura_estados/` no se compila con este proyecto. Es un esqueleto para el firmware de cada grupo: se copian los dos `.h` y el `lazo_config.h` del Taller 2, y se completan los `TODO` del esqueleto con la IMU, los encoders y los motores de cada robot. El procedimiento está en [GUIA_ESTRUCTURA_ESTADOS.md](GUIA_ESTRUCTURA_ESTADOS.md).
+
+| Comando del esqueleto | Qué hace |
+|---|---|
+| `r 20` | Prueba de los dos lazos de RPM en el soporte: las dos ruedas a 20 RPM |
+| `e` | Equilibrio. Se arma solo con \|θ\| < 5° y se apaga con \|θ\| > 40° |
+| `p` | Parar |
+| `k Kθ Kω Kv Kx` | Ganancias en unidades del firmware, con el robot parado. Ej.: `k 80.8 10.9 3.21 129.4` |
+| `o 1.5` | Ángulo de equilibrio θ0 en grados, con el robot parado |
+
+La telemetría sale a 50 Hz con las columnas `t_ms, theta, omega, rpmRef, yL, yR, uL, uR, x, ciclo_us`.
 
 ## Problemas comunes
 
