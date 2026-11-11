@@ -16,6 +16,7 @@
  * para que imprimir nunca retrase el control.
  */
 #include <Arduino.h>
+#include "config.h"             // pines, signos y cuentas por vuelta del Lab 1
 #include "lazo_config.h"        // el que generó el notebook del Taller 2 para su grupo
 #include "lazo_rpm_nucleo.h"    // ruedaL, ruedaR, disenar(), pasoLazo()
 #include "estructura_estados.h" // Ganancias, Equilibrio, filtroComplementario(), pasoEquilibrio()
@@ -32,18 +33,24 @@ static Ganancias K = {80.8f, 10.9f, 3.21f, 129.4f}; // TODO: las de SU Taller 2 
 static float theta0 = 0.0f;                         // [°] ángulo de equilibrio (guía, paso B2)
 
 // ============================================================================
-// 2. HARDWARE (TODO: escríbalo con lo que ya tiene su firmware)
+// 2. HARDWARE (TODO: lo escribe cada grupo)
+//    Si trabajan en src/ del repositorio, peguen aquí las secciones 1 (ENCODERS) y
+//    2 (MOTORES) de control_rpm.cpp, con los struct Encoder y Motor y las variables
+//    encL, encR, motL y motR. NO copien Recta, Rueda, ruedaL ni ruedaR: esos vienen
+//    de lazo_rpm_nucleo.h. Vea la sección 4.4 de la guía.
 // ============================================================================
-// Ángulo del acelerómetro [°] y giro del eje de cabeceo [°/s], sin signo corregido.
+// thetaAcc: ángulo de inclinación que da el ACELERÓMETRO [°] (lee la gravedad).
+// omega:    velocidad de inclinación que da el GIROSCOPIO [°/s], menos el sesgo.
+// Los dos sin corregir el signo: eso lo hacen SIGNO_THETA y SIGNO_OMEGA.
 static bool leerIMU(float &thetaAcc, float &omega)
 {
-  thetaAcc = 0; // TODO: atan2 con los ejes de SU montaje
-  omega = 0;    // TODO: giroscopio del eje de cabeceo, menos el sesgo medido al arrancar
+  thetaAcc = 0; // TODO: atan2(a_x, a_z) en grados, con los ejes de SU montaje
+  omega = 0;    // TODO: giroscopio del eje de cabeceo [°/s] − sesgo medido al arrancar
   return false; // TODO: true cuando la lectura sea válida
 }
 
-// Vueltas de cada rueda desde que arrancó el programa: cuentas / cuentas por vuelta,
-// positivas al avanzar (con los signos del Lab 1).
+// Vueltas de cada rueda desde que arrancó el programa, positivas al avanzar.
+// En src/:  vueltasL = leerCuentas(encL) / encL.cuentasVuelta;  (igual con R)
 static void leerVueltas(float &vueltasL, float &vueltasR)
 {
   vueltasL = 0; // TODO
@@ -51,7 +58,8 @@ static void leerVueltas(float &vueltasL, float &vueltasR)
 }
 
 // PWM con signo: positivo = adelante (el signo de cada motor ya corregido).
-static void aplicarPWM(int uL, int uR)
+// En src/:  aplicarPWM(motL, uL);  aplicarPWM(motR, uR);
+static void moverMotores(int uL, int uR)
 {
   (void)uL; // TODO
   (void)uR; // TODO
@@ -124,7 +132,7 @@ static void tareaControl(void *)
     // 4. Lazo de RPM de cada rueda → PWM
     const int uL = (int)lroundf(pasoLazo(ruedaL, r, yL, dt));
     const int uR = (int)lroundf(pasoLazo(ruedaR, r, yR, dt));
-    aplicarPWM(uL, uR);
+    moverMotores(uL, uR);
 
     // 5. Telemetría
     portENTER_CRITICAL(&muxTele);
@@ -169,7 +177,9 @@ static void procesar(String s)
 void setup()
 {
   Serial.begin(115200);
-  // TODO: iniciar IMU (y medir el sesgo del giroscopio con el robot quieto), encoders y motores
+  // TODO: iniciar la IMU y medir el sesgo del giroscopio con el robot quieto (promedio de ~500 lecturas).
+  // TODO: iniciar encoders y motores. En src/: STBY como salida, iniciarMotor(motL), iniciarMotor(motR),
+  //       iniciarEncoder(encL, isrEncoderL), iniciarEncoder(encR, isrEncoderR) y habilitarDriver(true).
   disenar(); // Kp y Ki de cada rueda desde el modelo (lazo_config.h)
   xTaskCreatePinnedToCore(tareaControl, "control", 4096, nullptr, configMAX_PRIORITIES - 2, nullptr, 1);
   Serial.println("t_ms,theta,omega,rpmRef,yL,yR,uL,uR,x,ciclo_us");

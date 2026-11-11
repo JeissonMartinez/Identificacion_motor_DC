@@ -24,6 +24,20 @@ Hasta ahora el robot equilibra con la cascada del Corte 1. Hoy cambiamos los dos
 
 ![De la cascada a la estructura de estados](img/estructura/cascada_a_estados.png)
 
+### 2.1 ¿Qué control es este y por qué cambiamos la cascada?
+
+Es una **realimentación de estados**. El controlador mira a la vez los cuatro estados del robot ($\theta$, $\dot\theta$, $v$ y $x$) y con una sola ecuación decide la aceleración de las ruedas. Las cuatro ganancias salen por **ubicación de polos**: ustedes escogen qué tan rápido debe volver el robot (los polos) y el modelo dice qué ganancias lo logran. Eso fue lo que hicieron en el Taller 2.
+
+| | Cascada del Corte 1 | Estructura de estados |
+|---|---|---|
+| Cuántos controladores | Tres lazos, uno dentro del otro | Un bloque con cuatro ganancias, más el lazo de RPM |
+| De dónde salen las ganancias | Prueba y error, lazo por lazo | Del modelo, las cuatro a la vez |
+| Si se mueve una ganancia | Cambia el comportamiento de los otros lazos | Se sabe dónde quedan los polos |
+| Qué se sabe antes de probar | Casi nada | Si es estable, el $K_\theta$ mínimo y el efecto del retardo, en la simulación |
+| Qué sale del lazo de ángulo | PWM directo: la batería y la zona muerta lo cambian todo | Una aceleración en RPM/s. El lazo de RPM se encarga de la batería y la zona muerta |
+
+La cascada no está mal. En el fondo usa las mismas cuatro señales. La diferencia es cómo se escogen las ganancias. Además, esta estructura es la que usa el LQR (20 de noviembre) y la que la red neuronal va a imitar en el Corte 3. En el Lab 2 se comparan las dos con datos.
+
 ---
 
 ## 3. La idea, paso a paso
@@ -79,9 +93,33 @@ Fíjense en tres cosas:
 
 ---
 
-## 4. Un ciclo de 5 ms
+## 4. Firmware
 
-En el firmware, cada 5 ms y siempre en este orden:
+### 4.1 ¿Por qué cada 5 ms?
+
+En el paso 16 de la guía de modelado sacamos el periodo de muestreo con la regla de 20 muestras dentro de la constante de tiempo del polo inestable:
+
+$$
+T_s \le \frac{1}{20}\cdot\frac{1}{p}
+$$
+
+Con el par como entrada, $p = 17{,}26\ \mathrm{rad/s}$, y daba $T_s \le 2{,}9\ \mathrm{ms}$. Ahora la entrada es $\alpha$, porque el lazo de RPM está cerrado, y el polo es más lento (sección B.1 del Taller 2):
+
+$$
+T_s \le \frac{1}{20}\cdot\frac{1}{7{,}37\ \mathrm{rad/s}} = 6{,}8\ \mathrm{ms}
+$$
+
+El lazo de RPM corre en el mismo ciclo, y también necesita varias muestras dentro de la $\tau$ del motor. Con $\tau \approx 20\ \mathrm{ms}$ y $T_s = 5\ \mathrm{ms}$ hay 4 muestras por cada $\tau$. Ir más rápido no ayuda, porque la RPM se mide con las cuentas de los últimos 10 ms, y en menos tiempo cada cuenta pesa más.
+
+Por eso 5 ms sirve para los dos lazos.
+
+![Las escalas de tiempo del robot](img/estructura/escalas_de_tiempo.png)
+
+Si cambian $T_s$, también cambian $K_p$ y $K_i$ del lazo de RPM, porque $L_{total}$ incluye $T_s/2$.
+
+### 4.2 Un ciclo de 5 ms
+
+Cada 5 ms y siempre en este orden:
 
 1. IMU → $\theta$ y $\dot\theta$.
 2. Encoders → vueltas y RPM medida de cada rueda.
@@ -89,9 +127,11 @@ En el firmware, cada 5 ms y siempre en este orden:
 4. Lazo de RPM de cada rueda → PWM.
 5. Se guarda una copia para la telemetría.
 
-Imprimir por el puerto serie se hace **fuera** de ese ciclo. Si se imprime adentro, el ciclo se demora y el control pierde el paso.
+El control corre en una **tarea** de FreeRTOS que se despierta cada 5 ms. Imprimir por el puerto serie se hace **fuera**, en `loop()`. Si se imprime adentro, el ciclo se demora y el control pierde el paso.
 
-El esqueleto `estructura_estados/esqueleto_equilibrio.cpp` ya trae ese orden. Ustedes completan las partes marcadas con `TODO` usando el código que ya tienen para su IMU, sus encoders y sus motores.
+![Un ciclo de 5 ms](img/estructura/ciclo_5ms.gif)
+
+### 4.3 Cómo está organizado el código
 
 | Archivo | Qué trae | ¿Lo modifican? |
 |---|---|---|
@@ -99,6 +139,140 @@ El esqueleto `estructura_estados/esqueleto_equilibrio.cpp` ya trae ese orden. Us
 | `estructura_estados/lazo_rpm_nucleo.h` | El lazo de RPM de una rueda, igual al del Taller 2 | No |
 | `estructura_estados/estructura_estados.h` | El lazo de equilibrio: la ecuación de 3.2, el tope y la seguridad | No |
 | `estructura_estados/esqueleto_equilibrio.cpp` | El ciclo de 5 ms, los comandos y la telemetría | Sí: los `TODO` y las ganancias |
+
+**`lazo_rpm_nucleo.h`** es el lazo del Taller 2, sin hardware:
+
+- `ruedaL` y `ruedaR` guardan el modelo de cada rueda ($K_m$, $N_0$, $\tau$, $L$).
+- `disenar()` calcula $K_p$ y $K_i$ desde el modelo, una vez al arrancar.
+- `pasoLazo(rueda, r, y, dt)` recibe la RPM deseada `r` y la medida `y`, y devuelve el PWM.
+
+**`estructura_estados.h`** es el lazo de equilibrio. Su corazón son estas líneas de `pasoEquilibrio()`:
+
+```cpp
+e.x = 0.5f * ((vueltasL - e.origenL) + (vueltasR - e.origenR));                 // x [vueltas]
+e.alfa = k.kTheta * theta + k.kOmega * omega + k.kV * e.rpmRef + k.kX * e.x;    // α [RPM/s]
+e.rpmRef += e.alfa * dt;                                                        // v ← v + α·Ts
+```
+
+Además trae `filtroComplementario()` y `revisarSeguridad()`, que desarma el lazo con $|\theta| > 40°$ y lo vuelve a armar con $|\theta| < 5°$.
+
+**`esqueleto_equilibrio.cpp`** tiene cinco secciones:
+
+| Sección | Qué tiene |
+|---|---|
+| 1. Ajustes | `SIGNO_THETA`, `SIGNO_OMEGA`, el tope de la RPM deseada, las ganancias `K` y `theta0` |
+| 2. Hardware | Las tres funciones que escriben ustedes (`TODO`) |
+| 3. Estado compartido | El modo (parado, prueba de RPM, equilibrio) y la copia para la telemetría |
+| 4. Ciclo de control | `tareaControl()`: los cinco pasos de 4.2 |
+| 5. Comandos y telemetría | `procesar()`, `setup()` y `loop()` |
+
+En pocas líneas, la tarea de control hace esto (versión resumida):
+
+```cpp
+leerIMU(thetaAcc, omega);                                                   // 1. IMU
+theta = filtroComplementario(theta, thetaAcc, omega, dt, TAU_FILTRO_S);
+leerVueltas(vL, vR);                                                        // 2. encoders
+r = pasoEquilibrio(eq, K, theta - theta0, omega, vL, vR, dt, RPM_MAX);      // 3. equilibrio
+moverMotores(pasoLazo(ruedaL, r, yL, dt), pasoLazo(ruedaR, r, yR, dt));     // 4. lazos de RPM
+```
+
+### 4.4 Lo que ustedes escriben (los `TODO`)
+
+**`thetaAcc` y `omega`.** La IMU entrega dos medidas distintas del mismo movimiento:
+
+- `thetaAcc` es el ángulo que da el **acelerómetro**. Quieto, el acelerómetro solo siente la gravedad. Si el robot se inclina, la gravedad se reparte entre los ejes $a_x$ y $a_z$ del sensor, y el ángulo sale de $\theta_{acc} = \mathrm{atan2}(a_x, a_z)$. En promedio es correcto, pero es ruidoso: cada vibración del motor y cada aceleración del robot lo mueven.
+- `omega` es lo que da el **giroscopio**: qué tan rápido gira el robot, en °/s. Es limpio, pero tiene un sesgo. Quieto no da exactamente 0, y si uno lo integra, el ángulo se va corriendo.
+
+El filtro complementario toma lo mejor de cada uno:
+
+$$
+\theta \leftarrow a\,(\theta + \omega\,T_s) + (1-a)\,\theta_{acc}, \qquad a = \frac{\tau}{\tau + T_s} = \frac{0{,}5}{0{,}505} \approx 0{,}99
+$$
+
+En cada ciclo, el 99 % sale del giroscopio y el 1 % del acelerómetro, que corrige la deriva poco a poco.
+
+![Acelerómetro, giroscopio y filtro complementario](img/estructura/imu_theta_omega.gif)
+
+Si su IMU es una MPU6050, `leerIMU()` puede quedar así. Ojo con los ejes: depende de cómo está montada. El eje del giroscopio es el que gira cuando el robot se inclina hacia adelante, y los del acelerómetro son los dos que quedan en el plano del movimiento.
+
+```cpp
+#include <Wire.h>
+static float sesgoGy = 0;   // se mide en setup(), con el robot quieto
+
+static bool leerIMU(float &thetaAcc, float &omega)
+{
+  Wire.beginTransmission(0x68);
+  Wire.write(0x3B);                                    // desde ACCEL_XOUT_H
+  if (Wire.endTransmission(false) != 0 || Wire.requestFrom(0x68, 14) != 14)
+    return false;
+  int16_t d[7];                                        // ax, ay, az, temperatura, gx, gy, gz
+  for (int i = 0; i < 7; i++)
+    d[i] = (Wire.read() << 8) | Wire.read();
+  thetaAcc = atan2f(d[0], d[2]) * RAD_TO_DEG;          // atan2(a_x, a_z) en grados
+  omega = d[5] / 131.0f - sesgoGy;                     // gy en °/s (escala de ±250 °/s)
+  return true;
+}
+```
+
+**`leerVueltas()` y `moverMotores()`.** Con el código de `src/` son dos líneas cada una:
+
+```cpp
+vueltasL = leerCuentas(encL) / encL.cuentasVuelta;     // en leerVueltas()
+vueltasR = leerCuentas(encR) / encR.cuentasVuelta;
+
+aplicarPWM(motL, uL);                                  // en moverMotores()
+aplicarPWM(motR, uR);
+```
+
+**`setup()`.** Arrancar la IMU, medir el sesgo con el robot quieto e iniciar encoders y motores:
+
+```cpp
+Wire.begin();                       // o Wire.begin(SDA, SCL) con sus pines
+Wire.setClock(400000);
+// despertar la MPU6050 (0x6B = 0) y poner su filtro interno en unos 44 Hz (0x1A = 3)
+Wire.beginTransmission(0x68); Wire.write(0x6B); Wire.write(0); Wire.endTransmission();
+Wire.beginTransmission(0x68); Wire.write(0x1A); Wire.write(3); Wire.endTransmission();
+float suma = 0, a, w;
+for (int i = 0; i < 500; i++) { leerIMU(a, w); suma += w; delay(2); }
+sesgoGy = suma / 500;               // el robot NO se mueve durante este segundo
+
+if (PIN_STBY >= 0) pinMode(PIN_STBY, OUTPUT);
+iniciarMotor(motL);  iniciarMotor(motR);
+iniciarEncoder(encL, isrEncoderL);  iniciarEncoder(encR, isrEncoderR);
+habilitarDriver(true);
+```
+
+### 4.5 Cómo se integra con lo que ya está en `src/`
+
+Lo más simple es agregar un **tercer programa** al proyecto del curso. Así reutilizan los pines, los signos y las cuentas por vuelta que ya probaron en el Lab 1, y el lazo de RPM del Taller 2.
+
+![El programa nuevo dentro de src/](img/estructura/archivos_firmware.png)
+
+| Paso | Qué hacer |
+|---|---|
+| 1 | Copien `estructura_estados/esqueleto_equilibrio.cpp` a `src/equilibrio.cpp`, y los dos `.h` de `estructura_estados/` a `src/` |
+| 2 | En la sección 2 de `equilibrio.cpp`, peguen de `control_rpm.cpp` los `struct Encoder` y `struct Motor`, las variables `encL`, `encR`, `motL` y `motR`, y las secciones `1. ENCODERS` y `2. MOTORES`. Agreguen arriba `#include "soc/gpio_reg.h"` y `#include "soc/soc.h"` |
+| 3 | **No** copien `Recta`, `Rueda`, `ruedaL` ni `ruedaR`. Esos ya vienen en `lazo_rpm_nucleo.h`, y si se repiten no compila |
+| 4 | Completen los `TODO` como en 4.4 |
+| 5 | En `src/main.cpp` agreguen el tercer programa (abajo) |
+
+```cpp
+#define PROG_IDENTIFICACION  1
+#define PROG_CONTROL_RPM     2
+#define PROG_EQUILIBRIO      3
+
+#define PROGRAMA  PROG_EQUILIBRIO
+
+#if PROGRAMA == PROG_IDENTIFICACION
+  #include "identificacion.cpp"
+#elif PROGRAMA == PROG_CONTROL_RPM
+  #include "control_rpm.cpp"
+#elif PROGRAMA == PROG_EQUILIBRIO
+  #include "equilibrio.cpp"
+#endif
+```
+
+Nosotros lo armamos así, con una MPU6050, y compila en el ESP32-S3. Si su grupo prefiere trabajar en su propio firmware, el camino es el mismo: copien `lazo_config.h` y los dos `.h`, y usen sus propias funciones de encoders y motores en los `TODO`.
 
 ---
 
@@ -116,8 +290,8 @@ Robot en el soporte, ruedas en el aire.
 
 | Paso | Qué hacer | Qué deben ver |
 |---|---|---|
-| A1 | Copien a su proyecto `lazo_config.h`, `lazo_rpm_nucleo.h`, `estructura_estados.h` y el esqueleto | — |
-| A2 | Completen los `TODO`: leer la IMU, leer las vueltas de cada rueda y aplicar el PWM | — |
+| A1 | Armen `src/equilibrio.cpp` como en 4.5 | Compila |
+| A2 | Completen los `TODO` como en 4.4: leer la IMU, leer las vueltas de cada rueda y mover los motores | — |
 | A3 | Carguen y escriban `r 20` | Las dos ruedas a 20 RPM: columnas `yL` y `yR` cerca de 20 |
 | A4 | `r -20` y luego `p` | Las dos hacia atrás. Con `p` se detienen |
 | A5 | Miren la columna `ciclo_us` | Siempre menos de 2000 µs. El ciclo dura 5000 µs y necesita margen |

@@ -154,7 +154,7 @@ $$
 \alpha = K_\theta\,\theta + K_\omega\,\dot\theta + K_v\,v + K_x\,x, \qquad v \leftarrow v + \alpha\,T_s
 $$
 
-La carpeta `estructura_estados/` no se compila con este proyecto. Es un esqueleto para el firmware de cada grupo: se copian los dos `.h` y el `lazo_config.h` del Taller 2, y se completan los `TODO` del esqueleto con la IMU, los encoders y los motores de cada robot. El procedimiento está en [GUIA_ESTRUCTURA_ESTADOS.md](GUIA_ESTRUCTURA_ESTADOS.md).
+La carpeta `estructura_estados/` no se compila con este proyecto. Es un esqueleto para el firmware de cada grupo: se copian los dos `.h` y el `lazo_config.h` del Taller 2, y se completan los `TODO` del esqueleto con la IMU, los encoders y los motores de cada robot. En este repositorio se agrega como tercer programa: `src/equilibrio.cpp` y `PROGRAMA = PROG_EQUILIBRIO` en `main.cpp` (sección 4.5 de la guía). El procedimiento está en [GUIA_ESTRUCTURA_ESTADOS.md](GUIA_ESTRUCTURA_ESTADOS.md).
 
 | Comando del esqueleto | Qué hace |
 |---|---|
