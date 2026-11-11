@@ -145,7 +145,7 @@ static void tareaControl(void *)
 // ============================================================================
 // 5. COMANDOS Y TELEMETRÍA (en loop, nunca dentro del ciclo de control)
 // ============================================================================
-//   e         equilibrio (se arma solo cuando |θ| < 5°)
+//   e         equilibrio (se enciende solo cuando |θ| < 5°)
 //   p         parar
 //   r 20      prueba de los lazos de RPM con el robot en el soporte: las dos ruedas a 20 RPM
 //   k Kθ Kω Kv Kx   cambiar ganancias, con el robot parado.  Ej.: k 80.8 10.9 3.21 129.4
@@ -158,7 +158,7 @@ static void procesar(String s)
   float a, b, c, d;
   switch (s[0])
   {
-  case 'e': modo = EQUILIBRIO; Serial.println("Equilibrio: se arma con |θ| < 5°"); break;
+  case 'e': modo = EQUILIBRIO; Serial.println("Equilibrio: se enciende con |θ| < 5°"); break;
   case 'p': modo = PARADO; Serial.println("Parado"); break;
   case 'r':
     if (sscanf(s.c_str() + 1, "%f", &a) == 1) { rpmPrueba = a; modo = PRUEBA_RPM; }

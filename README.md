@@ -159,7 +159,7 @@ La carpeta `estructura_estados/` no se compila con este proyecto. Es un esquelet
 | Comando del esqueleto | Qué hace |
 |---|---|
 | `r 20` | Prueba de los dos lazos de RPM en el soporte: las dos ruedas a 20 RPM |
-| `e` | Equilibrio. Se arma solo con \|θ\| < 5° y se apaga con \|θ\| > 40° |
+| `e` | Equilibrio. Se enciende solo con \|θ\| < 5° y se apaga con \|θ\| > 40° |
 | `p` | Parar |
 | `k Kθ Kω Kv Kx` | Ganancias en unidades del firmware, con el robot parado. Ej.: `k 80.8 10.9 3.21 129.4` |
 | `o 1.5` | Ángulo de equilibrio θ0 en grados, con el robot parado |
