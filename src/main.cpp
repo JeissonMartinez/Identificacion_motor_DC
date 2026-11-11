@@ -21,7 +21,7 @@
 // ============================================================================
 // Elija el programa
 // ============================================================================
-#define PROGRAMA  PROG_IDENTIFICACION
+#define PROGRAMA  PROG_CONTROL_RPM
 //PROG_IDENTIFICACION
 
 #if PROGRAMA == PROG_IDENTIFICACION

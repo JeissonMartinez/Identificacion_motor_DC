@@ -16,15 +16,15 @@
 // 1. MOTORES — driver TB6612FNG
 //    Rueda izquierda (L) y rueda derecha (R). Escriba el número de GPIO.
 // ============================================================================
-#define MOTOR_L_PWM   4    // PWMB en el robot del docente
-#define MOTOR_L_IN1   8    // BIN1
-#define MOTOR_L_IN2   7    // BIN2
+#define MOTOR_L_PWM   5    // PWMB en el robot del docente
+#define MOTOR_L_IN1   7    // BIN1
+#define MOTOR_L_IN2   6    // BIN2
 
-#define MOTOR_R_PWM    15    // PWMA
-#define MOTOR_R_IN1    5    // AIN1
-#define MOTOR_R_IN2    6    // AIN2
+#define MOTOR_R_PWM    18    // PWMA
+#define MOTOR_R_IN1    16    // AIN1
+#define MOTOR_R_IN2    17    // AIN2
 
-#define PIN_STBY      -1    // Pin STBY del TB6612. Si STBY va fijo a 3.3 V, escriba -1
+#define PIN_STBY      15    // Pin STBY del TB6612. Si STBY va fijo a 3.3 V, escriba -1
 
 #define MOTOR_L_SIGNO -1    // +1 o -1: hace que PWM positivo mueva la rueda hacia adelante
 #define MOTOR_R_SIGNO -1
@@ -34,17 +34,17 @@
 //    Si un canal B está dañado o no existe, escriba -1: el sketch cuenta solo
 //    con el canal A (x2) y toma el sentido del PWM aplicado.
 // ============================================================================
-#define ENC_L_A       38
-#define ENC_L_B       39    // Robot del docente: el sensor B izquierdo está dañado
-#define ENC_R_A       40
-#define ENC_R_B       47    // GPIO 46 es pin de arranque: desconéctelo para cargar el programa
+#define ENC_L_A       3
+#define ENC_L_B       46    // Robot del docente: el sensor B izquierdo está dañado
+#define ENC_R_A       9
+#define ENC_R_B       -1    // 11 GPIO 46 es pin de arranque: desconéctelo para cargar el programa
 
 #define ENC_L_SIGNO   -1    // +1 o -1: hace que avanzar cuente positivo
-#define ENC_R_SIGNO   +1
+#define ENC_R_SIGNO   -1
 
 // Cuentas por vuelta de la RUEDA (no del eje del motor). Mídalas con el comando "c".
-#define CUENTAS_VUELTA_L  2993.8f
-#define CUENTAS_VUELTA_R  2498.8f
+#define CUENTAS_VUELTA_L  2499.7f // 2993.8f
+#define CUENTAS_VUELTA_R  2502.4f // 2498.8f
 
 // ============================================================================
 // 3. PWM
