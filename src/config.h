@@ -37,14 +37,14 @@
 #define ENC_L_A       3
 #define ENC_L_B       46    // Robot del docente: el sensor B izquierdo está dañado
 #define ENC_R_A       9
-#define ENC_R_B       -1    // 11 GPIO 46 es pin de arranque: desconéctelo para cargar el programa
+#define ENC_R_B       11    // 11 GPIO 46 es pin de arranque: desconéctelo para cargar el programa
 
 #define ENC_L_SIGNO   -1    // +1 o -1: hace que avanzar cuente positivo
-#define ENC_R_SIGNO   -1
+#define ENC_R_SIGNO   +1
 
 // Cuentas por vuelta de la RUEDA (no del eje del motor). Mídalas con el comando "c".
-#define CUENTAS_VUELTA_L  2499.7f // 2993.8f
-#define CUENTAS_VUELTA_R  2502.4f // 2498.8f
+#define CUENTAS_VUELTA_L  2489.3f // 2993.8f
+#define CUENTAS_VUELTA_R  2499.0f // 2498.8f
 
 // ============================================================================
 // 3. PWM

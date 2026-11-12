@@ -1,29 +1,29 @@
 /*
  * lazo_config.h — Modelo de los motores y diseño del lazo de RPM
- * Generado por el notebook del Taller 2 para el grupo profesor_v2, a partir de parametros_motor_Profesor_v2.json
+ * Generado por el notebook del Taller 2 para el grupo profesor_v3, a partir de parametros_motor_Profesor_v3.json
  * RPM ≈ K_m·PWM − N0, una recta por sentido. K_m = K del Lab 1, N0 = B del Lab 1.
  */
 #pragma once
 
 // Rueda izquierda (L)
-#define KM_L_ADELANTE   0.25638f
-#define N0_L_ADELANTE   2.96080f
-#define ZM_L_ADELANTE   15
-#define KM_L_ATRAS      0.24557f
-#define N0_L_ATRAS      1.92022f
-#define ZM_L_ATRAS      15
-#define TAU_L_S         0.02222f
+#define KM_L_ADELANTE   0.25822f
+#define N0_L_ADELANTE   1.88120f
+#define ZM_L_ADELANTE   20
+#define KM_L_ATRAS      0.26156f
+#define N0_L_ATRAS      1.88786f
+#define ZM_L_ATRAS      10
+#define TAU_L_S         0.01993f
 #define RETARDO_L_S     0.00000f
 
 // Rueda derecha (R)
-#define KM_R_ADELANTE   0.09473f
-#define N0_R_ADELANTE   -21.53526f
+#define KM_R_ADELANTE   0.24194f
+#define N0_R_ADELANTE   2.06852f
 #define ZM_R_ADELANTE   20
-#define KM_R_ATRAS      0.07076f
-#define N0_R_ATRAS      -58.61934f
+#define KM_R_ATRAS      0.26134f
+#define N0_R_ATRAS      2.51947f
 #define ZM_R_ATRAS      20
-#define TAU_R_S         0.01770f
-#define RETARDO_R_S     0.00080f
+#define TAU_R_S         0.02038f
+#define RETARDO_R_S     0.00000f
 
 // Diseño del lazo (valores iniciales; se cambian en vivo con comandos)
 #define LAMBDA_MS        50
